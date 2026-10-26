@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Hub · Estudio</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: { study: '#8B5CF6', darkbg: '#050810' },
+        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        boxShadow: { 'glow-study': '0 0 24px -4px rgba(139, 92, 246, 0.5)' }
+      }
+    }
+  }
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  * { -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: #050810;
+    color: #F8FAFC;
+    background-image: radial-gradient(ellipse at top, rgba(139, 92, 246, 0.15), transparent 50%);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+  .glass {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.7), rgba(11, 18, 32, 0.85));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(51, 65, 85, 0.5);
+  }
+  .timer-circle {
+    transition: stroke-dashoffset 1s linear, stroke 0.3s;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+    70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(139, 92, 246, 0); }
+    100% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+  }
+  .pulse-timer { animation: pulse-ring 2s infinite; }
+  
+  @keyframes egg-wiggle {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    25% { transform: scale(1.05) rotate(3deg); }
+    50% { transform: scale(0.98) rotate(-2deg); }
+    75% { transform: scale(1.02) rotate(1deg); }
+  }
+  .egg-wiggle { animation: egg-wiggle 3s infinite ease-in-out; }
+
+  .pokemon-container {
+    position: relative;
+    width: 100%;
+    height: 140px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .pokemon-img {
+    object-fit: contain;
+    width: auto;
+    display: block;
+    filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3));
+  }
+
+  /* Clase para cuando el Pokémon está fuera de la caja */
+  .wandering-pet {
+    position: absolute !important;
+    z-index: 9999;
+    pointer-events: none;
+    filter: drop-shadow(0 20px 20px rgba(0,0,0,0.5)) !important;
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #475569; }
+</style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+<!-- HEADER -->
+<header class="sticky top-0 z-40 glass border-b border-slate-800/80 px-4 py-2">
+  <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-study to-indigo-400 flex items-center justify-center shadow-glow-study">
+        <i class="fa-solid fa-book-open text-white text-xs"></i>
+      </div>
+      <h1 class="text-base font-black tracking-tight text-white hidden sm:block">Zona de Estudo</h1>
+    </div>
+
+    <nav class="flex bg-slate-950/80 border border-slate-800/80 rounded-xl p-1 gap-1 backdrop-blur">
+      <button data-view="timer" class="viewTab flex items-center justify-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-all bg-study text-white shadow-glow-study">
+        <i class="fa-solid fa-stopwatch text-xs"></i> Temporizador
+      </button>
+      <button data-view="exams" class="viewTab flex items-center justify-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-all text-slate-400 hover:text-white">
+        <i class="fa-solid fa-list-check text-xs"></i> Exames
+      </button>
+    </nav>
+
+    <div class="w-9 hidden sm:block"></div>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto w-full px-4 py-8 flex-1 flex flex-col items-center">
+
+  <!-- ═══════════ VISTA: TEMPORIZADOR ═══════════ -->
+  <section id="view-timer" class="view flex flex-col md:flex-row items-center justify-center w-full gap-8 md:gap-16 pt-6">
+    
+    <!-- BLOQUE IZQUIERDO: Timer UI -->
+    <div class="flex flex-col items-center">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="flex gap-2 bg-slate-900/60 border border-slate-800 p-1 rounded-xl">
+          <button data-mode="focus" class="mode-btn px-3 py-1.5 rounded-lg text-xs font-bold text-study bg-study/10 transition-all">Enfoque</button>
+          <button data-mode="short" class="mode-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all">Descanso curto</button>
+          <button data-mode="long" class="mode-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all">Descanso longo</button>
+        </div>
+        <button onclick="openModal('settingsModal')" class="bg-slate-900/60 hover:bg-slate-800 border border-slate-800 p-2 rounded-xl text-slate-400 hover:text-white transition-all" title="Axustar tempos">
+          <i class="fa-solid fa-gear text-xs"></i>
+        </button>
+      </div>
+
+      <div class="relative w-64 h-64 md:w-72 md:h-72 mb-6">
+        <svg class="w-full h-full" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="#1E293B" stroke-width="4" />
+          <circle id="timerProgress" class="timer-circle" cx="50" cy="50" r="45" fill="none" stroke="#8B5CF6" stroke-width="4" stroke-linecap="round" stroke-dasharray="282.7" stroke-dashoffset="0" />
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <span id="timeDisplay" class="text-5xl md:text-6xl font-black text-white tracking-tighter">25:00</span>
+          <span id="modeLabel" class="text-[10px] font-bold uppercase tracking-widest text-study mt-1">Enfoque</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <button id="resetBtn" class="w-12 h-12 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-all active:scale-95" title="Reiniciar">
+          <i class="fa-solid fa-rotate-left text-lg"></i>
+        </button>
+        <button id="playBtn" class="w-16 h-16 rounded-full bg-study hover:bg-violet-500 text-white flex items-center justify-center text-2xl transition-all shadow-glow-study active:scale-95">
+          <i id="playIcon" class="fa-solid fa-play ml-1"></i>
+        </button>
+        <button id="skipBtn" class="w-12 h-12 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-all active:scale-95" title="Saltar">
+          <i class="fa-solid fa-forward-step text-lg"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- BLOQUE DERECHO: Mascota -->
+    <div class="flex flex-col items-center w-full max-w-sm">
+      <div class="glass rounded-2xl p-4 w-full text-center relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-study to-transparent opacity-50"></div>
+        
+        <!-- Contenedor del Pokémon (aquí es donde vive normalmente) -->
+        <div class="pokemon-container mb-1" id="petSlot">
+          <img id="petImage" src="img/egg.png" class="pokemon-img z-10" onerror="handleImgError(this)">
+        </div>
+
+        <h3 id="petName" class="text-lg font-black text-white mb-1">Ovo Misterioso</h3>
+        <p id="petDesc" class="text-[11px] text-slate-400 mb-3">Estudia para que eclosione.</p>
+        
+        <div class="w-full bg-slate-800/80 rounded-full h-2 mb-2 overflow-hidden border border-slate-700">
+          <div id="petProgress" class="bg-gradient-to-r from-study to-indigo-400 h-2 rounded-full transition-all duration-1000" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between text-[10px] font-bold text-slate-400">
+          <span id="statHours">0h estudadas</span>
+          <span id="nextStageText">Seguinte: Eclosión (3h)</span>
+        </div>
+      </div>
+
+      <!-- ⚠️ BORRAR: PANEL DE DESARROLLADOR ⚠️ -->
+      <div class="mt-4 flex flex-col items-center w-full">
+        <button onclick="document.getElementById('devTools').classList.toggle('hidden')" class="text-[10px] text-slate-600 hover:text-study font-bold transition-colors">
+          <i class="fa-solid fa-code"></i> Opciones de Desarrollador
+        </button>
+        <div id="devTools" class="hidden glass p-3 rounded-xl mt-2 flex flex-wrap gap-2 justify-center border border-study/30 w-full">
+          <p class="w-full text-[10px] text-slate-400 mb-1">Prueba las etapas (cambia a Descanso para ver animaciones):</p>
+          <button onclick="devSetStage('egg')" class="bg-slate-800 hover:bg-slate-700 text-xs text-white px-3 py-1.5 rounded">Huevo</button>
+          <button onclick="devSetStage('ralts')" class="bg-slate-800 hover:bg-slate-700 text-xs text-white px-3 py-1.5 rounded">Ralts</button>
+          <button onclick="devSetStage('kirlia')" class="bg-slate-800 hover:bg-slate-700 text-xs text-white px-3 py-1.5 rounded">Kirlia</button>
+          <button onclick="devSetStage('gardevoir')" class="bg-slate-800 hover:bg-slate-700 text-xs text-white px-3 py-1.5 rounded">Gardevoir</button>
+          <button onclick="devSetStage('mega')" class="bg-slate-800 hover:bg-slate-700 text-xs text-white px-3 py-1.5 rounded">Mega</button>
+          <button onclick="devReset()" class="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white text-xs px-3 py-1.5 rounded border border-red-500/50 w-full mt-1">Borrar progreso y volver a 0</button>
+        </div>
+      </div>
+      <!-- ⚠️ FIN PANEL DE DESARROLLADOR ⚠️ -->
+    </div>
+
+  </section>
+
+  <!-- ═══════════ VISTA: Exames ═══════════ -->
+  <section id="view-exams" class="view hidden w-full">
+    
+    <!-- 1. VISTA PRINCIPAL: LISTA DE TEMAS -->
+    <div id="exams-theme-list">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+        <div>
+          <h2 class="text-2xl font-black text-white">Meus Temas</h2>
+          <p class="text-sm text-slate-400 mt-1">Crea temas, engade preguntas e xera exames.</p>
+        </div>
+        <button onclick="openModal('themeModal')" class="bg-study hover:bg-violet-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-glow-study flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i> Crear Tema
+        </button>
+      </div>
+
+      <div id="themeGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <!-- Se rellena con JS -->
+      </div>
+
+      <!-- Panel para generar examen -->
+      <div id="examConfigPanel" class="glass p-6 rounded-2xl hidden flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex-1">
+          <h3 class="text-lg font-bold text-white">Xerar exame</h3>
+          <p class="text-xs text-slate-400" id="selectedThemesInfo">0 temas seleccionados</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <label class="text-sm font-bold text-slate-300">Preguntas:</label>
+            <input type="number" id="examCount" value="10" min="1" max="100" class="w-20 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-center text-white focus:outline-none focus:border-study">
+          </div>
+          <button id="generateExamBtn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-6 py-2.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            Comezar Exame
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. VISTA: DETALLE DEL TEMA -->
+    <div id="exams-theme-detail" class="hidden">
+      <div class="flex items-center gap-4 mb-6">
+        <button onclick="closeThemeDetail()" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-all">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <div>
+          <h2 id="themeDetailTitle" class="text-2xl font-black text-white">Nombre del Tema</h2>
+          <p id="themeDetailCount" class="text-xs text-slate-400 mt-1">0 preguntas</p>
+        </div>
+        <button onclick="openQuestionModal()" class="ml-auto bg-study hover:bg-violet-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-glow-study flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i> Añadir Preguntas
+        </button>
+      </div>
+
+      <div id="questionList" class="space-y-3">
+        <!-- Se rellena con JS -->
+      </div>
+    </div>
+
+    <!-- 3. VISTA: EXAMEN EN CURSO -->
+    <div id="exams-workspace" class="hidden">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-black text-white">Examen en curso</h2>
+        <button onclick="closeExam()" class="text-slate-400 hover:text-white text-sm font-bold">Cancelar e volver</button>
+      </div>
+      
+      <div class="glass p-4 rounded-xl border-l-4 border-blue-500 mb-6 text-sm text-slate-300 flex items-start gap-3">
+        <i class="fa-solid fa-circle-info text-blue-400 mt-0.5"></i>
+        <div>
+          <strong class="text-white">Información do exame:</strong><br>
+          As preguntas de <b>Tipo Test</b> corríxense automáticamente ao final. As preguntas <b>Abertas</b> teñen un botón para mostrar a resposta e autoavaliarte.
+        </div>
+      </div>
+
+      <div id="examResultBox" class="hidden mb-6 p-6 rounded-2xl bg-study/10 border border-study/30 flex items-center justify-between">
+        <div>
+          <p class="text-sm text-slate-300 font-bold uppercase tracking-wider">Resultado (Test)</p>
+          <p id="examScoreText" class="text-4xl font-black text-white mt-1">0 / 0</p>
+          <p id="examMessage" class="text-sm mt-2 font-medium"></p>
+        </div>
+        <i class="fa-solid fa-trophy text-5xl text-study opacity-80"></i>
+      </div>
+
+      <form id="examForm" class="space-y-5">
+        <div id="examQuestionsContainer" class="space-y-5"></div>
+        <button type="submit" id="submitExamBtn" class="w-full bg-study hover:bg-violet-500 text-white font-bold py-4 rounded-xl text-lg transition-all shadow-glow-study">
+          Correxir Exame
+        </button>
+      </form>
+    </div>
+
+  </section>
+</main>
+
+<!-- ═══════════ MODALES ═══════════ -->
+
+<!-- Modal: Crear Tema -->
+<div id="themeModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-200">
+  <div class="glass border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-transform duration-200">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-folder-plus text-study mr-2"></i> Novo Tema</h3>
+      <button onclick="closeModal('themeModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <input type="text" id="newThemeName" placeholder="Ex: Inglés Gramática" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-study mb-4">
+    <button onclick="createTheme()" class="w-full bg-study hover:bg-violet-500 text-white font-bold py-3 rounded-xl transition-all">Crear Tema</button>
+  </div>
+</div>
+
+<!-- Modal: Añadir Preguntas -->
+<div id="questionModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-200">
+  <div class="glass border border-slate-800 rounded-2xl w-full max-w-2xl p-6 shadow-2xl transform scale-95 transition-transform duration-200 max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between mb-5 shrink-0">
+      <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-file-circle-plus text-study mr-2"></i> Engadir Preguntas</h3>
+      <button onclick="closeModal('questionModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    
+    <div class="flex gap-2 bg-slate-900/60 border border-slate-800 p-1 rounded-xl mb-4 shrink-0">
+      <button onclick="setQuestionType('test')" id="btnTypeTest" class="flex-1 py-2 text-sm font-bold rounded-lg bg-study text-white transition-all">Tipo Test</button>
+      <button onclick="setQuestionType('open')" id="btnTypeOpen" class="flex-1 py-2 text-sm font-bold rounded-lg text-slate-400 hover:text-white transition-all">Abertas</button>
+    </div>
+    <div class="flex gap-2 bg-slate-900/60 border border-slate-800 p-1 rounded-xl mb-6 shrink-0">
+      <button onclick="setInputMethod('json')" id="btnInputJson" class="flex-1 py-2 text-sm font-bold rounded-lg bg-slate-800 text-white transition-all">Pegar JSON</button>
+      <button onclick="setInputMethod('manual')" id="btnInputManual" class="flex-1 py-2 text-sm font-bold rounded-lg text-slate-400 hover:text-white transition-all">Manual (unha a unha)</button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto pr-2">
+      <div id="inputJsonArea">
+        <div class="bg-study/10 border border-study/30 rounded-xl p-4 mb-4">
+          <p class="text-xs text-study font-bold mb-2">Instrucciones para ChatGPT:</p>
+          <p id="jsonPromptText" class="text-xs text-slate-300 font-mono bg-slate-950 p-3 rounded-lg select-all">Genera un JSON...</p>
+        </div>
+        <textarea id="jsonInput" rows="8" placeholder="Pega aquí o JSON devolto polo ChatGPT..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm font-mono text-white focus:outline-none focus:border-study resize-none"></textarea>
+        <button onclick="processJSON()" class="w-full mt-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition-all">Procesar JSON</button>
+      </div>
+
+      <div id="inputManualArea" class="hidden space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Pregunta</label>
+          <textarea id="manualQText" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-study"></textarea>
+        </div>
+        
+        <div id="manualTestFields" class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <input type="text" id="manualOptA" placeholder="Opción A" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-study">
+            <input type="text" id="manualOptB" placeholder="Opción B" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-study">
+            <input type="text" id="manualOptC" placeholder="Opción C" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-study">
+            <input type="text" id="manualOptD" placeholder="Opción D" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-study">
+          </div>
+          <div class="flex gap-3">
+            <select id="manualCorrect" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-study">
+              <option value="A">Correcta: A</option>
+              <option value="B">Correcta: B</option>
+              <option value="C">Correcta: C</option>
+              <option value="D">Correcta: D</option>
+            </select>
+            <input type="text" id="manualExp" placeholder="Explicación (opcional)" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-study">
+          </div>
+        </div>
+
+        <div id="manualOpenFields" class="hidden">
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Respuesta</label>
+          <textarea id="manualAText" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-study"></textarea>
+        </div>
+
+        <button onclick="saveManualQuestion()" class="w-full mt-2 bg-study hover:bg-violet-500 text-white font-bold py-3 rounded-xl transition-all">Gardar Pregunta</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ajustes del Temporizador -->
+<div id="settingsModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-200">
+  <div class="glass border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-transform duration-200">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-gear text-study mr-2"></i> Axustar tempos</h3>
+      <button onclick="closeModal('settingsModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-bold text-slate-300 mb-1">Minutos de Enfoque</label>
+        <input type="number" id="setFocusTime" min="1" max="180" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-study">
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-slate-300 mb-1">Minutos de Descanso curto</label>
+        <input type="number" id="setShortTime" min="1" max="60" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-study">
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-slate-300 mb-1">Minutos de Descanso longo</label>
+        <input type="number" id="setLongTime" min="1" max="60" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-study">
+      </div>
+    </div>
+    <button onclick="saveTimerSettings()" class="w-full mt-6 bg-study hover:bg-violet-500 text-white font-bold py-3 rounded-xl transition-all shadow-glow-study">Gardar Axustes</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   ESTADO GLOBAL Y ALMACENAMIENTO
+   ═══════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const safeLoad = (k, f) => { try { return JSON.parse(localStorage.getItem(k)) || f; } catch { return f; } };
+const safeSave = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+let themes = safeLoad('study_themes_v3', []);
+let stats = safeLoad('study_stats_v1', { minutes: 0 });
+let petStage = safeLoad('study_pet_stage', 'egg');
+let timersConfig = safeLoad('study_timers_config', { focus: 25, short: 5, long: 15 });
+
+let activeView = 'timer';
+let activeThemeId = null;
+let currentExamQuestions = [];
+let selectedThemeIds = [];
+let currentQType = 'test';
+let currentInputMethod = 'json';
+
+// Variables para el movimiento del Pokémon
+const petImage = $('petImage');
+const petSlot = $('petSlot');
+const originalParent = petSlot; // Guardamos quién es su padre original
+
+let isMoving = false;
+let isReturning = false;
+let posX = 0, posY = 0;
+let velX = 2.5, velY = 2.5;
+let targetX = 0, targetY = 0;
+let animationId = null;
+
+/* ═══════════════════════════════════════════
+   NAVEGACIÓN (PESTAÑAS)
+   ═══════════════════════════════════════════ */
+document.querySelectorAll('.viewTab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.viewTab').forEach(t => {
+      t.classList.remove('bg-study', 'text-white', 'shadow-glow-study');
+      t.classList.add('text-slate-400', 'hover:text-white');
+    });
+    tab.classList.add('bg-study', 'text-white', 'shadow-glow-study');
+    tab.classList.remove('text-slate-400', 'hover:text-white');
+    
+    $('view-timer').classList.toggle('hidden', tab.dataset.view !== 'timer');
+    $('view-exams').classList.toggle('hidden', tab.dataset.view !== 'exams');
+    activeView = tab.dataset.view;
+    
+    updatePetUI();
+  });
+});
+
+/* ═══════════════════════════════════════════
+   LÓGICA DE MOVIMIENTO DEL POKÉMON (CON SALIDA DEL DOM)
+   ═══════════════════════════════════════════ */
+function startWandering() {
+  if (isMoving || petStage === 'egg') return;
+  
+  // 1. Calcular dónde está ahora
+  const rect = petImage.getBoundingClientRect();
+  posX = rect.left + rect.width / 2 + window.scrollX;
+  posY = rect.top + rect.height / 2 + window.scrollY;
+
+  // 2. Mover el elemento fuera de la caja y ponerlo en el body
+  document.body.appendChild(petImage);
+  petImage.classList.add('wandering-pet');
+
+  // 3. Ponerlo en su posición inicial calculada
+  petImage.style.transform = `translate(${posX}px, ${posY}px) translate(-50%, -50%)`;
+
+  // 4. Dirección aleatoria inicial
+  velX = (Math.random() > 0.5 ? 1 : -1) * 2.5;
+  velY = (Math.random() > 0.5 ? 1 : -1) * 2.5;
+
+  isMoving = true;
+  isReturning = false;
+  
+  if (animationId) cancelAnimationFrame(animationId);
+  animatePet();
+}
+
+function returnToSlot() {
+  if (!isMoving || isReturning) return;
+  isReturning = true;
+  
+  // Calcular dónde está la caja ahora mismo (por si el usuario ha hecho scroll)
+  const rect = petSlot.getBoundingClientRect();
+  targetX = rect.left + rect.width / 2 + window.scrollX;
+  targetY = rect.top + rect.height / 2 + window.scrollY;
+}
+
+function stopWandering() {
+  if (!isMoving) return;
+  isMoving = false;
+  isReturning = false;
+  
+  if (animationId) cancelAnimationFrame(animationId);
+  
+  // Devolverlo a su caja original
+  originalParent.appendChild(petImage);
+  petImage.classList.remove('wandering-pet');
+  petImage.style.transform = '';
+  petImage.style.left = '';
+  petImage.style.top = '';
+}
+
+function animatePet() {
+  if (!isMoving) return;
+
+  if (isReturning) {
+    // Lógica para volver a la caja
+    const dx = targetX - posX;
+    const dy = targetY - posY;
+    const dist = Math.hypot(dx, dy);
+    
+    if (dist < 15) {
+      stopWandering(); // Ya ha llegado
+      return;
+    }
+    // Mover hacia la caja a una velocidad constante
+    posX += (dx / dist) * 8;
+    posY += (dy / dist) * 8;
+  } else {
+    // Lógica para deambular
+    posX += velX;
+    posY += velY;
+    
+    // Límites de la página (no de la pantalla)
+    const maxX = window.innerWidth - 80;
+    const maxY = Math.max(window.innerHeight, document.documentElement.scrollHeight) - 80;
+    
+    if (posX < 80) { posX = 80; velX = Math.abs(velX); }
+    if (posX > maxX) { posX = maxX; velX = -Math.abs(velX); }
+    if (posY < 80) { posY = 80; velY = Math.abs(velY); }
+    if (posY > maxY) { posY = maxY; velY = -Math.abs(velY); }
+  }
+
+  // Rotación suave mientras camina
+  const rot = Math.sin(posX / 50) * 8;
+  petImage.style.transform = `translate(${posX}px, ${posY}px) translate(-50%, -50%) rotate(${rot}deg)`;
+  
+  animationId = requestAnimationFrame(animatePet);
+}
+
+/* ═══════════════════════════════════════════
+   FUNCIÓN PARA ARREGLAR IMÁGENES QUE NO CARGAN
+   ═══════════════════════════════════════════ */
+function handleImgError(img) {
+  if (img.src.includes('_study.png')) {
+    img.src = img.src.replace('_study.png', '.png');
+  } else if (!img.src.includes('egg.png')) {
+    img.src = 'img/egg.png';
+  } else {
+    // Si tampoco carga el huevo (no hay carpeta img/), muestra un emoji
+    img.style.display = 'none';
+    if (!petSlot.querySelector('.fallback-emoji')) {
+      const emoji = document.createElement('div');
+      emoji.className = 'fallback-emoji text-5xl';
+      emoji.innerText = petStage === 'egg' ? '🥚' : '👾';
+      petSlot.appendChild(emoji);
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════
+   LÓGICA DEL TEMPORIZADOR Y LA MASCOTA
+   ═══════════════════════════════════════════ */
+const MODES = {
+  focus: { label: 'Enfoque', color: '#8B5CF6' },
+  short: { label: 'Descanso curto', color: '#10B981' },
+  long:  { label: 'Descanso longo', color: '#3B82F6' }
+};
+
+let currentMode = 'focus';
+let timeLeft = timersConfig.focus * 60;
+let timerInterval = null;
+let isRunning = false;
+let endTime = null;
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playBeep() {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+  gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 1);
+}
+
+function updatePetUI() {
+  const hours = Math.floor(stats.minutes / 60);
+  
+  let currentStage = 'egg';
+  let nextStageName = 'Ralts';
+  let nextThresholdMins = 180;
+  
+  if (hours >= 50) { currentStage = 'mega'; nextThresholdMins = Infinity; }
+  else if (hours >= 25) { currentStage = 'gardevoir'; nextStageName = 'Mega Gardevoir'; nextThresholdMins = 50 * 60; }
+  else if (hours >= 10) { currentStage = 'kirlia'; nextStageName = 'Gardevoir'; nextThresholdMins = 25 * 60; }
+  else if (hours >= 3) { currentStage = 'ralts'; nextStageName = 'Kirlia'; nextThresholdMins = 10 * 60; }
+  
+  if (petStage === 'egg' && stats.minutes >= 180) {
+    currentStage = 'egg'; 
+  } else if (petStage !== currentStage && currentStage !== 'egg') {
+    petStage = currentStage;
+    safeSave('study_pet_stage', petStage);
+    const emoji = petSlot.querySelector('.fallback-emoji');
+    if (emoji) emoji.remove();
+    petImage.style.display = 'block';
+  }
+
+  const isFocus = currentMode === 'focus';
+  const isEgg = petStage === 'egg';
+
+  let imgName = `${petStage}.png`;
+  if (!isEgg && isFocus) imgName = `${petStage}_study.png`;
+  
+  if (!petImage.src.endsWith(imgName) && petImage.style.display !== 'none') {
+    petImage.src = `img/${imgName}`;
+  }
+
+  const petSizes = { egg: '80px', ralts: '100px', kirlia: '120px', gardevoir: '130px', mega: '140px' };
+  petImage.style.maxHeight = petSizes[petStage];
+  petImage.style.height = petSizes[petStage];
+
+  // Animaciones de CSS (el huevo se mueve en la caja)
+  petImage.classList.remove('egg-wiggle');
+  if (isEgg) petImage.classList.add('egg-wiggle');
+
+  // Control de salida/entrada
+  if (isFocus || isEgg || activeView !== 'timer') {
+    if (isMoving) {
+      if (isEgg || activeView !== 'timer') {
+        stopWandering(); // Desaparecer y volver a la caja de golpe si cambia de pestaña o es huevo
+      } else {
+        returnToSlot(); // Volver caminando a la caja si cambia a Enfoque
+      }
+    }
+  } else {
+    startWandering(); // Salir a deambular
+  }
+
+  if (petStage === 'egg' && stats.minutes >= 180) {
+    petImage.classList.add('cursor-pointer', 'animate-pulse');
+    petImage.style.pointerEvents = 'auto';
+    $('petName').textContent = "¡Se move!";
+    $('petDesc').textContent = "Fai clic no ovo para que eclosione.";
+  } else {
+    petImage.classList.remove('cursor-pointer', 'animate-pulse');
+    if (!isMoving) petImage.style.pointerEvents = 'none';
+    const names = { egg: 'Ovo Misterioso', ralts: 'Ralts', kirlia: 'Kirlia', gardevoir: 'Gardevoir', mega: 'Mega Gardevoir' };
+    const descs = { 
+      egg: 'Parece que hai algo dentro...', 
+      ralts: 'Sinte as tuas emocións. Encántalle estudar contigo.', 
+      kirlia: 'Baila cando no estudias.', 
+      gardevoir: 'Protexete. Ve o futuro dos teus Exames.', 
+      mega: 'Poder máximo desbloqueado.' 
+    };
+    $('petName').textContent = names[petStage];
+    $('petDesc').textContent = descs[petStage];
+  }
+
+  if (nextThresholdMins === Infinity) {
+    $('petProgress').style.width = '100%';
+    $('nextStageText').textContent = 'Evolución máxima';
+  } else {
+    const progress = Math.min(100, (stats.minutes / nextThresholdMins) * 100);
+    $('petProgress').style.width = `${progress}%`;
+    
+    if (petStage === 'egg') {
+      $('nextStageText').textContent = `Seguinte: Eclosión (3h)`;
+    } else {
+      $('nextStageText').textContent = `Seguinte: ${nextStageName} (${nextThresholdMins/60}h)`;
+    }
+  }
+  $('statHours').textContent = `${hours}h estudadas`;
+}
+
+petImage.addEventListener('click', () => {
+  if (petStage === 'egg' && stats.minutes >= 180) {
+    petStage = 'ralts';
+    safeSave('study_pet_stage', petStage);
+    playBeep();
+    petImage.style.transform = 'scale(1.5)';
+    petImage.classList.remove('animate-pulse', 'egg-wiggle');
+    setTimeout(() => {
+      petImage.style.transform = '';
+      updatePetUI();
+    }, 400);
+  }
+});
+
+function addStudyTime(minutes) {
+  stats.minutes += minutes;
+  safeSave('study_stats_v1', stats);
+  updatePetUI();
+}
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const s = (seconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function updateTimerUI() {
+  $('timeDisplay').textContent = formatTime(timeLeft);
+  const total = timersConfig[currentMode] * 60;
+  const progress = (total - timeLeft) / total;
+  const dashoffset = 282.7 - (282.7 * progress);
+  
+  $('timerProgress').style.strokeDashoffset = dashoffset;
+  $('timerProgress').style.stroke = MODES[currentMode].color;
+  $('modeLabel').textContent = MODES[currentMode].label;
+  $('modeLabel').style.color = MODES[currentMode].color;
+  
+  document.title = isRunning ? `${formatTime(timeLeft)} - ${MODES[currentMode].label}` : 'Mi Hub · Estudio';
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  timeLeft = timersConfig[mode] * 60;
+  isRunning = false;
+  clearInterval(timerInterval);
+  $('playIcon').className = 'fa-solid fa-play ml-1';
+  $('playBtn').classList.remove('pulse-timer');
+  
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    const isActive = btn.dataset.mode === mode;
+    if(isActive) btn.className = 'mode-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-study/10 text-study transition-all';
+    else btn.className = 'mode-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all';
+  });
+  
+  updateTimerUI();
+  updatePetUI();
+}
+
+function toggleTimer() {
+  if (isRunning) {
+    isRunning = false;
+    clearInterval(timerInterval);
+    $('playIcon').className = 'fa-solid fa-play ml-1';
+    $('playBtn').classList.remove('pulse-timer');
+    endTime = null;
+  } else {
+    isRunning = true;
+    endTime = Date.now() + timeLeft * 1000;
+    $('playIcon').className = 'fa-solid fa-pause';
+    $('playBtn').classList.add('pulse-timer');
+    
+    timerInterval = setInterval(() => {
+      const diff = Math.round((endTime - Date.now()) / 1000);
+      if (diff <= 0) {
+        clearInterval(timerInterval);
+        isRunning = false;
+        timeLeft = 0;
+        updateTimerUI();
+        $('playIcon').className = 'fa-solid fa-play ml-1';
+        $('playBtn').classList.remove('pulse-timer');
+        playBeep();
+        endTime = null;
+        
+        if (currentMode === 'focus') {
+          addStudyTime(timersConfig.focus);
+        }
+      } else {
+        timeLeft = diff;
+        updateTimerUI();
+      }
+    }, 500);
+  }
+  updateTimerUI();
+}
+
+$('playBtn').addEventListener('click', toggleTimer);
+$('resetBtn').addEventListener('click', () => { setMode(currentMode); });
+$('skipBtn').addEventListener('click', () => { setMode(currentMode === 'focus' ? 'short' : 'focus'); });
+document.querySelectorAll('.mode-btn').forEach(btn => btn.addEventListener('click', () => setMode(btn.dataset.mode)));
+
+function saveTimerSettings() {
+  timersConfig.focus = parseInt($('setFocusTime').value) || 25;
+  timersConfig.short = parseInt($('setShortTime').value) || 5;
+  timersConfig.long = parseInt($('setLongTime').value) || 15;
+  safeSave('study_timers_config', timersConfig);
+  closeModal('settingsModal');
+  setMode(currentMode);
+}
+
+// ⚠️ BORRAR: OPCIONES DE DESARROLLADOR ⚠️
+function devSetStage(stage) {
+  if (stage === 'egg') { stats.minutes = 0; petStage = 'egg'; }
+  if (stage === 'ralts') { stats.minutes = 180; petStage = 'ralts'; }
+  if (stage === 'kirlia') { stats.minutes = 600; petStage = 'kirlia'; }
+  if (stage === 'gardevoir') { stats.minutes = 1500; petStage = 'gardevoir'; }
+  if (stage === 'mega') { stats.minutes = 3000; petStage = 'mega'; }
+  safeSave('study_stats_v1', stats);
+  safeSave('study_pet_stage', petStage);
+  updatePetUI();
+}
+function devReset() {
+  if (confirm('¿Seguro que quieres borrar todo tu progreso de estudio?')) {
+    stats.minutes = 0;
+    petStage = 'egg';
+    safeSave('study_stats_v1', stats);
+    safeSave('study_pet_stage', petStage);
+    updatePetUI();
+  }
+}
+// ⚠️ FIN OPCIONES DE DESARROLLADOR ⚠️
+
+function openModal(id) {
+  const m = $(id);
+  m.classList.remove('opacity-0', 'pointer-events-none');
+  m.firstElementChild.classList.remove('scale-95');
+  m.firstElementChild.classList.add('scale-100');
+  
+  if (id === 'settingsModal') {
+    $('setFocusTime').value = timersConfig.focus;
+    $('setShortTime').value = timersConfig.short;
+    $('setLongTime').value = timersConfig.long;
+  }
+}
+function closeModal(id) {
+  const m = $(id);
+  m.classList.add('opacity-0', 'pointer-events-none');
+  m.firstElementChild.classList.remove('scale-100');
+  m.firstElementChild.classList.add('scale-95');
+}
+
+function escapeHtml(s = '') {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// Inicialización
+setMode('focus');
+renderThemeList();
+</script>
+</body>
+</html>
