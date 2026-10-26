@@ -174,23 +174,6 @@
           <span id="nextStageText">Seguinte: Eclosión (3h)</span>
         </div>
       </div>
-
-      <!-- ⚠️ BORRAR: PANEL DE DESARROLLADOR ⚠️ -->
-      <div class="mt-4 flex flex-col items-center w-full">
-        <button onclick="document.getElementById('devTools').classList.toggle('hidden')" class="text-[10px] text-slate-600 hover:text-study font-bold transition-colors">
-          <i class="fa-solid fa-code"></i> Opciones de Desarrollador
-        </button>
-        <div id="devTools" class="hidden glass p-3 rounded-xl mt-2 flex flex-wrap gap-2 justify-center border border-study/30 w-full">
-          <p class="w-full text-[10px] text-slate-400 mb-1">Prueba las etapas (cambia a Descanso para ver animaciones):</p>
-          <button onclick="devSetStage('egg')" class="bg-slate-800 hover:bg-slate-700 text-xs text-white px-3 py-1.5 rounded">Huevo</button>
-          <button onclick="devSetStage('ralts')" class="bg-slate-800 hover:bg-slate-700 text-xs text-white px-3 py-1.5 rounded">Ralts</button>
-          <button onclick="devSetStage('kirlia')" class="bg-slate-800 hover:bg-slate-700 text-xs text-white px-3 py-1.5 rounded">Kirlia</button>
-          <button onclick="devSetStage('gardevoir')" class="bg-slate-800 hover:bg-slate-700 text-xs text-white px-3 py-1.5 rounded">Gardevoir</button>
-          <button onclick="devSetStage('mega')" class="bg-slate-800 hover:bg-slate-700 text-xs text-white px-3 py-1.5 rounded">Mega</button>
-          <button onclick="devReset()" class="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white text-xs px-3 py-1.5 rounded border border-red-500/50 w-full mt-1">Borrar progreso y volver a 0</button>
-        </div>
-      </div>
-      <!-- ⚠️ FIN PANEL DE DESARROLLADOR ⚠️ -->
     </div>
 
   </section>
@@ -777,28 +760,6 @@ function saveTimerSettings() {
   closeModal('settingsModal');
   setMode(currentMode);
 }
-
-// ⚠️ BORRAR: OPCIONES DE DESARROLLADOR ⚠️
-function devSetStage(stage) {
-  if (stage === 'egg') { stats.minutes = 0; petStage = 'egg'; }
-  if (stage === 'ralts') { stats.minutes = 180; petStage = 'ralts'; }
-  if (stage === 'kirlia') { stats.minutes = 600; petStage = 'kirlia'; }
-  if (stage === 'gardevoir') { stats.minutes = 1500; petStage = 'gardevoir'; }
-  if (stage === 'mega') { stats.minutes = 3000; petStage = 'mega'; }
-  safeSave('study_stats_v1', stats);
-  safeSave('study_pet_stage', petStage);
-  updatePetUI();
-}
-function devReset() {
-  if (confirm('¿Seguro que quieres borrar todo tu progreso de estudio?')) {
-    stats.minutes = 0;
-    petStage = 'egg';
-    safeSave('study_stats_v1', stats);
-    safeSave('study_pet_stage', petStage);
-    updatePetUI();
-  }
-}
-// ⚠️ FIN OPCIONES DE DESARROLLADOR ⚠️
 
 function openModal(id) {
   const m = $(id);
